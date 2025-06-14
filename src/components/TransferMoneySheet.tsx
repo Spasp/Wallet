@@ -102,7 +102,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
         await new Promise((resolve,reject) => setTimeout(()=>{
         if (shouldReject) reject(new Error("Network issue"))
           return resolve("Success")
-        },2000)) 
+        },6000)) 
         setRecipientName('');
         setRecipientAccount('');
         setAmount('');
@@ -152,14 +152,14 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
               {/* Recipient Name */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Recipient Name *</Text>
-                <BottomSheetTextInput style={[styles.input, errors?.recipientName && styles.inputError]} value={recipientName} onChangeText={setRecipientName} placeholder="Enter recipient's full name" placeholderTextColor={styles.placeHolderColor.color} />
+                <BottomSheetTextInput editable={!isProcessing} style={[styles.input, errors?.recipientName && styles.inputError]} value={recipientName} onChangeText={setRecipientName} placeholder="Enter recipient's full name" placeholderTextColor={styles.placeHolderColor.color} />
                 <ErrorDisplay message={errors?.recipientName?.[0]} />
               </View>
 
               {/* Recipient Account */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Phone Number</Text>
-                <BottomSheetTextInput style={[styles.input, errors?.recipientAccount && styles.inputError]} value={recipientAccount} keyboardType="phone-pad" onChangeText={setRecipientAccount} placeholder="Enter phone number (+30...)" placeholderTextColor={styles.placeHolderColor.color} />
+                <BottomSheetTextInput editable={!isProcessing} style={[styles.input, errors?.recipientAccount && styles.inputError]} value={recipientAccount} keyboardType="phone-pad" onChangeText={setRecipientAccount} placeholder="Enter phone number (+30...)" placeholderTextColor={styles.placeHolderColor.color} />
                 <ErrorDisplay message={errors?.recipientAccount?.[0]} />
               </View>
 
@@ -169,6 +169,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
                 <View style={[styles.amountInputContainer, (errors?.amount || (amount && parseFloat(amount) > balance)) && styles.inputError]}>
                   <Text style={styles.currencySymbol}>€</Text>
                   <BottomSheetTextInput
+                  editable={!isProcessing}
                     style={styles.amountInput}
                     value={liveAmount}
                     onChangeText={(text) => {
@@ -197,6 +198,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
                   minimumValue={0}
                   maximumValue={Math.floor(balance)}
                   step={1}
+                  disabled={isProcessing}
                   
                    onValueChange={(value) => setLiveAmount(Math.round(value).toString())}
                
@@ -211,7 +213,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
               {/* Description */}
               <View style={[styles.inputContainer,{marginBottom:5,}]}>
                 <Text style={styles.label}>Description (Optional)</Text>
-                <BottomSheetTextInput numberOfLines={2} maxLength={50} style={[styles.input, styles.descriptionInput]} value={description} onChangeText={setDescription} placeholder="Add a note for this transfer" multiline placeholderTextColor={styles.placeHolderColor.color} />
+                <BottomSheetTextInput editable={!isProcessing} numberOfLines={2} maxLength={50} style={[styles.input, styles.descriptionInput]} value={description} onChangeText={setDescription} placeholder="Add a note for this transfer" multiline placeholderTextColor={styles.placeHolderColor.color} />
               
               </View>
             </View>

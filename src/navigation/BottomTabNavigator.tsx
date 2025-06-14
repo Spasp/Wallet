@@ -17,16 +17,13 @@ const BottomTabNavigator = () => {
 
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const insets = useSafeAreaInsets();
-  const [balance, setBalance] = useState(1500.75);
+ 
 
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
   }, []);
 
-  const handleTransferComplete = (transferData: { amount: number }) => {
-    setBalance(prev => prev - transferData.amount);
-  };
-
+ 
   return (
     <View style={{ flex: 1 }}>
       <Tab.Navigator
@@ -70,9 +67,9 @@ const BottomTabNavigator = () => {
       </Tab.Navigator>
       <TransferMoneySheet
         ref={bottomSheetModalRef}
-        balance={balance}
+       
         insets={insets}
-        onTransferComplete={handleTransferComplete}
+       
       />
     </View>
   );

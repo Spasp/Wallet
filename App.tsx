@@ -3,9 +3,10 @@ import { StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-// IMPORT THE MODAL PROVIDER
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { BottomTabNavigator } from './src/navigation';
+import { BalanceProvider } from './src/context/BalanceContext';
+
 
 function App(): React.JSX.Element {
   return (
@@ -13,9 +14,11 @@ function App(): React.JSX.Element {
       <SafeAreaProvider>
         {/* Wrap your NavigationContainer with the Modal Provider */}
         <BottomSheetModalProvider>
+          <BalanceProvider>
           <NavigationContainer>
             <BottomTabNavigator />
           </NavigationContainer>
+          </BalanceProvider>
         </BottomSheetModalProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

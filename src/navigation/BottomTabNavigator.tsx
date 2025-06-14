@@ -1,78 +1,60 @@
-// src/navigation/BottomTabNavigator.tsx
-import React, { useRef, useState } from 'react';
-import { View, Pressable } from 'react-native';
+import React, { useRef, useState, useCallback } from 'react';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import BottomSheet from '@gorhom/bottom-sheet';
-import Icon from 'react-native-vector-icons/Ionicons'; 
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import HomeScreen from '../screens/HomeScreen';
 import AccountScreen from '../screens/AccountScreen';
-// import { TransferMoneySheet } from '../components/TransferMoneySheet';
-import { BottomTabParamList } from './types';
 import TransferMoneySheet from '../components/TransferMoneySheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
-const DummyComponent = () => null;
+const EmptyComponent = () => null; 
 
 const BottomTabNavigator = () => {
-  const bottomSheetRef = useRef<BottomSheet>(null);
-  const [currentBalance, setCurrentBalance] = useState(1500.75);
-  const insets = useSafeAreaInsets();
 
-  const handleOpenPress = () => {
-    bottomSheetRef.current?.expand();
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const insets = useSafeAreaInsets();
+  const [balance, setBalance] = useState(1500.75);
+
+  const handlePresentModalPress = useCallback(() => {
+    bottomSheetModalRef.current?.present();
+  }, []);
+
+  const handleTransferComplete = (transferData: { amount: number }) => {
+    setBalance(prev => prev - transferData.amount);
   };
 
   return (
     <View style={{ flex: 1 }}>
       <Tab.Navigator
         screenOptions={{
+          headerShown: false,
           tabBarShowLabel: false,
-          tabBarStyle: { backgroundColor: '#ffffff', height: 60 },
+          tabBarStyle: { backgroundColor: '#ffffff', height: 70 },
         }}
       >
         <Tab.Screen
           name="Home"
           component={HomeScreen}
           options={{
-            headerTitle: 'My Wallet',
-            // FIX: Added the tabBarIcon function back in
             tabBarIcon: ({ color, size, focused }) => (
-              <Icon
-                name={focused ? 'wallet' : 'wallet-outline'}
-                size={size}
-                color={color}
-              />
+              <Icon name={focused ? 'wallet' : 'wallet-outline'} size={size} color={color} />
             ),
           }}
         />
         <Tab.Screen
           name="Add"
-          component={DummyComponent}
+          component={EmptyComponent}
           options={{
-            tabBarButton: () => (
-              <View style={{justifyContent:'center',alignItems:"center"}}>
-              <Pressable
-                onPress={handleOpenPress}
-                style={{
-                  top: -20,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  width: 50,
-                  height: 50,
-                  borderRadius: 30,
-                  backgroundColor: 'dodgerblue',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.27,
-                  shadowRadius: 4.65,
-                  elevation: 6,
-                }}
-              >
-                <Icon name="paper-plane-outline" size={24} color="white" />
+            tabBarButton: (props:any) => (
+              <Pressable {...props} onPress={handlePresentModalPress} style={styles.floatingButtonContainer}>
+                <View style={styles.floatingButton}>
+                  <Icon name="paper-plane-outline" size={30} color="white" />
+                </View>
               </Pressable>
-              </View>
             ),
           }}
         />
@@ -80,22 +62,41 @@ const BottomTabNavigator = () => {
           name="Account"
           component={AccountScreen}
           options={{
-            headerTitle: 'My Account',
-             // FIX: Added the tabBarIcon function back in
             tabBarIcon: ({ color, size, focused }) => (
-              <Icon
-                name={focused ? 'person' : 'person-outline'}
-                size={size}
-                color={color}
-              />
+              <Icon name={focused ? 'person' : 'person-outline'} size={size} color={color} />
             ),
           }}
         />
       </Tab.Navigator>
-
-      <TransferMoneySheet ref={bottomSheetRef} balance={currentBalance} insets={insets} />
+      <TransferMoneySheet
+        ref={bottomSheetModalRef}
+        balance={balance}
+        insets={insets}
+        onTransferComplete={handleTransferComplete}
+      />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+    floatingButtonContainer: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    floatingButton: {
+        top: -25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: 'dodgerblue',
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+    },
+});
 
 export default BottomTabNavigator;

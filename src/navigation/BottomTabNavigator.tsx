@@ -40,7 +40,7 @@ const BottomTabNavigator = () => {
           name="Home"
           component={HomeScreen}
           options={{
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, size, focused }:{color:string, size:number,focused:boolean}) => (
               <Icon name={focused ? 'wallet' : 'wallet-outline'} size={size} color={color} />
             ),
           }}
@@ -62,7 +62,7 @@ const BottomTabNavigator = () => {
           name="Account"
           component={AccountScreen}
           options={{
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, size, focused }:{color:string, size:number,focused:boolean}) => (
               <Icon name={focused ? 'person' : 'person-outline'} size={size} color={color} />
             ),
           }}

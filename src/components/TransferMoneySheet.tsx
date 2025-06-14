@@ -50,6 +50,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
     const [errors, setErrors] = useState<z.ZodError['formErrors']['fieldErrors'] | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
      const [liveAmount, setLiveAmount] = useState('');
+     
      const renderBackdrop = useCallback(
       (props: any) => (
         <BottomSheetBackdrop
@@ -79,18 +80,14 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
       setErrors(result.success ? null : result.error.formErrors.fieldErrors);
     }, [recipientName, recipientAccount, amount]);
 
-    const isFormValid = () => {
-      const parsedAmount = parseFloat(amount);
-      if (isNaN(parsedAmount) || parsedAmount <= 0 || parsedAmount > balance) {
-        return false;
-      }
-      return transferSchema.safeParse({ recipientName, recipientAccount, amount: parsedAmount }).success;
-    };
+   
+ const isButtonDisabled = errors !== null || isProcessing || parseFloat(amount) > balance;
 
-    // Handle transfer
+
     const handleTransfer = async () => {
-      if (!isFormValid()) {
-        Alert.alert('Error', 'Please fill all required fields and ensure the amount is valid.');
+      // We can do a final check here just in case.
+      if (errors !== null || parseFloat(amount) > balance) {
+        Alert.alert('Error', 'Please fix the errors before submitting.');
         return;
       }
 
@@ -99,13 +96,18 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
       const transferAmount = parseFloat(amount);
 
       try {
-        await new Promise((resolve,reject) => setTimeout(reject, 2000));
-        const transferData: TransferData = { recipientName, recipientAccount, amount: transferAmount, description };
-        
+         const transferData: TransferData = { recipientName, recipientAccount, amount: transferAmount, description };
+         const shouldReject = transferData.amount === 1 ? true:false
+         //For testing purposes if the input is 1 then the call fails
+        await new Promise((resolve,reject) => setTimeout(()=>{
+        if (shouldReject) reject(new Error("Network issue"))
+          return resolve("Success")
+        },2000)) 
         setRecipientName('');
         setRecipientAccount('');
         setAmount('');
         setDescription('');
+        setLiveAmount('')
         setErrors(null);
 
         onTransferComplete?.(transferData);
@@ -114,6 +116,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
         // 3. Dismiss the modal on success
         (ref as any)?.current?.dismiss();
       } catch (error) {
+        console.log(error)
         Alert.alert('Error', 'Transfer failed. Please try again.');
       } finally {
         setIsProcessing(false);
@@ -134,7 +137,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
         backgroundStyle={styles.bottomSheetBackground}
       >
         <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
-          <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
+          <View style={[styles.container, { paddingBottom: insets.bottom +10 }]}>
             <View style={styles.header}>
               <Icon name="paper-plane" size={24} color="#007AFF" />
               <Text style={styles.title}>Transfer Money</Text>
@@ -170,10 +173,9 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
                     value={liveAmount}
                     onChangeText={(text) => {
                       setLiveAmount(text); 
+                      setAmount(text)
                     }}
-                    onBlur={() => {
-                      setAmount(liveAmount); 
-                    }}
+                 
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     placeholderTextColor="#999999"
@@ -215,7 +217,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
             </View>
 
             {/* Transfer Button */}
-            <TouchableOpacity style={[styles.transferButton, (!isFormValid() || isProcessing) && styles.transferButtonDisabled]} onPress={handleTransfer} disabled={!isFormValid() || isProcessing}>
+            <TouchableOpacity style={[styles.transferButton, isButtonDisabled && styles.transferButtonDisabled]} onPress={handleTransfer} disabled={isButtonDisabled}>
               <Text style={styles.transferButtonText}>{isProcessing ? 'Processing...' : 'Transfer Money'}</Text>
             </TouchableOpacity>
           </View>

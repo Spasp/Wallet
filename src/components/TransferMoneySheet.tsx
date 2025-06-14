@@ -2,7 +2,6 @@ import React, { forwardRef, useMemo, useState, useCallback, useEffect } from 're
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
   Alert,
@@ -12,12 +11,15 @@ import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetScrollView,
+  BottomSheetTextInput
 } from '@gorhom/bottom-sheet';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
+import { isValidPhoneNumber } from 'libphonenumber-js';
+import Slider from '@react-native-community/slider';
+import ErrorDisplay from './ErrorDisplay';
 
-// Define the shape of the form data
 interface TransferData {
   recipientName: string;
   recipientAccount: string;
@@ -28,7 +30,7 @@ interface TransferData {
 // Define the validation schema using Zod
 const transferSchema = z.object({
   recipientName: z.string().min(8, 'Recipient full name is required'),
-  recipientAccount: z.string().min(5, 'A valid account is required'),
+  recipientAccount: z.string().refine(phone=>isValidPhoneNumber(phone),{message:"Please add a valid phone "}),
   amount: z.number().positive('Amount must be greater than 0'),
   description: z.string().optional(),
 });
@@ -47,6 +49,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
     const [description, setDescription] = useState('');
     const [errors, setErrors] = useState<z.ZodError['formErrors']['fieldErrors'] | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+     const [liveAmount, setLiveAmount] = useState('');
      const renderBackdrop = useCallback(
       (props: any) => (
         <BottomSheetBackdrop
@@ -96,7 +99,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
       const transferAmount = parseFloat(amount);
 
       try {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve,reject) => setTimeout(reject, 2000));
         const transferData: TransferData = { recipientName, recipientAccount, amount: transferAmount, description };
         
         setRecipientName('');
@@ -120,7 +123,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
     const formatCurrency = (value: number) => {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(value);
     };
-    return (
+   return (
       <BottomSheetModal
         ref={ref}
         index={0}
@@ -146,32 +149,68 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
               {/* Recipient Name */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Recipient Name *</Text>
-                <TextInput style={[styles.input, errors?.recipientName && styles.inputError]} value={recipientName} onChangeText={setRecipientName} placeholder="Enter recipient's full name" placeholderTextColor={styles.placeHolderColor.color}/>
-                {errors?.recipientName && <Text style={styles.errorText}>{errors.recipientName[0]}</Text>}
+                <BottomSheetTextInput style={[styles.input, errors?.recipientName && styles.inputError]} value={recipientName} onChangeText={setRecipientName} placeholder="Enter recipient's full name" placeholderTextColor={styles.placeHolderColor.color} />
+                <ErrorDisplay message={errors?.recipientName?.[0]} />
               </View>
 
               {/* Recipient Account */}
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Account Number *</Text>
-                <TextInput style={[styles.input, errors?.recipientAccount && styles.inputError]} value={recipientAccount} onChangeText={setRecipientAccount} placeholder="Enter account number or email" placeholderTextColor={styles.placeHolderColor.color} />
-                {errors?.recipientAccount && <Text style={styles.errorText}>{errors.recipientAccount[0]}</Text>}
+                <Text style={styles.label}>Phone Number</Text>
+                <BottomSheetTextInput style={[styles.input, errors?.recipientAccount && styles.inputError]} value={recipientAccount} keyboardType="phone-pad" onChangeText={setRecipientAccount} placeholder="Enter phone number (+30...)" placeholderTextColor={styles.placeHolderColor.color} />
+                <ErrorDisplay message={errors?.recipientAccount?.[0]} />
               </View>
 
               {/* Amount */}
-              <View style={styles.inputContainer}>
+              <View>
                 <Text style={styles.label}>Amount *</Text>
                 <View style={[styles.amountInputContainer, (errors?.amount || (amount && parseFloat(amount) > balance)) && styles.inputError]}>
                   <Text style={styles.currencySymbol}>€</Text>
-                  <TextInput style={styles.amountInput} value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={styles.placeHolderColor.color} />
+                  <BottomSheetTextInput
+                    style={styles.amountInput}
+                    value={liveAmount}
+                    onChangeText={(text) => {
+                      setLiveAmount(text); 
+                    }}
+                    onBlur={() => {
+                      setAmount(liveAmount); 
+                    }}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                    placeholderTextColor="#999999"
+                  />
                 </View>
-                {errors?.amount && <Text style={styles.errorText}>{errors.amount[0]}</Text>}
-                {amount && parseFloat(amount) > balance && <Text style={styles.errorText}>Amount exceeds available balance</Text>}
+              
+                <ErrorDisplay message={errors?.amount?.[0] || (amount && parseFloat(amount) > balance ? 'Amount exceeds available balance' : undefined)} />
+              </View>
+              
+              {/* Slider */}
+              <View style={styles.sliderWrapper}>
+                <Slider
+                  minimumTrackTintColor={"#007AFF"}
+                  maximumTrackTintColor='grey'
+                  thumbTintColor={"#007AFF"}
+                 onResponderGrant={()=>true}
+                  value={parseFloat(liveAmount) || 0}
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={Math.floor(balance)}
+                  step={1}
+                  
+                   onValueChange={(value) => setLiveAmount(Math.round(value).toString())}
+               
+                 onSlidingComplete={(value) => setAmount(Math.round(value).toString())}
+                />
+                <View style={styles.sliderMaxMinWrapper}>
+                  <Text style={styles.balanceLabel} >0 €</Text>
+                  <Text style={styles.balanceLabel} >{balance} €</Text>
+                </View>
               </View>
 
               {/* Description */}
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer,{marginBottom:5,}]}>
                 <Text style={styles.label}>Description (Optional)</Text>
-                <TextInput style={[styles.input, styles.descriptionInput]} value={description} onChangeText={setDescription} placeholder="Add a note for this transfer" multiline placeholderTextColor={styles.placeHolderColor.color} />
+                <BottomSheetTextInput numberOfLines={2} maxLength={50} style={[styles.input, styles.descriptionInput]} value={description} onChangeText={setDescription} placeholder="Add a note for this transfer" multiline placeholderTextColor={styles.placeHolderColor.color} />
+              
               </View>
             </View>
 
@@ -182,7 +221,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
           </View>
         </BottomSheetScrollView>
       </BottomSheetModal>
-    );
+    )
   }
 );
 
@@ -207,7 +246,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
     paddingTop: 10,
   },
   title: {
@@ -218,9 +257,9 @@ const styles = StyleSheet.create({
   },
   balanceContainer: {
     backgroundColor: '#F8F9FA',
-    padding: 16,
+    padding: 10,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 10,
     alignItems: 'center',
   },
   balanceLabel: {
@@ -236,7 +275,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   label: {
     fontSize: 14,
@@ -252,6 +291,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#FAFAFA',
     color: '#000',
+    flexWrap:"wrap",
+    flex:1,
+   
   },
   inputError: {
     borderColor: '#FF3B30',
@@ -304,7 +346,15 @@ const styles = StyleSheet.create({
   },
   placeHolderColor:{
     color:"#999999"
-  }
+  },
+  sliderWrapper:{
+
+  
+  },
+  slider:{
+    height:40,
+  },
+  sliderMaxMinWrapper:{flex:1,flexDirection:"row",justifyContent:"space-between"}
 });
 
 export default TransferMoneySheet;

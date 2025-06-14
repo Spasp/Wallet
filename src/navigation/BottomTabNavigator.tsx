@@ -28,19 +28,22 @@ const BottomTabNavigator = () => {
     <View style={{ flex: 1 }}>
       <Tab.Navigator
         screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: false,
+          headerShown: true,
+          tabBarShowLabel: true,
           tabBarStyle: { backgroundColor: '#ffffff', height: 70 },
         }}
       >
         <Tab.Screen
-          name="Home"
+          name="My wallet"
           component={HomeScreen}
           options={{
+            
             tabBarIcon: ({ color, size, focused }:{color:string, size:number,focused:boolean}) => (
               <Icon name={focused ? 'wallet' : 'wallet-outline'} size={size} color={color} />
             ),
           }}
+         
+          insets={insets}
         />
         <Tab.Screen
           name="Add"
@@ -82,12 +85,14 @@ const styles = StyleSheet.create({
     },
     floatingButton: {
         top: -25,
+      
         justifyContent: 'center',
         alignItems: 'center',
-        width: 60,
-        height: 60,
+        alignSelf:"center",
+        width: 50,
+        height: 50,
         borderRadius: 30,
-        backgroundColor: 'dodgerblue',
+        backgroundColor: '#007AFF',
         elevation: 8,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },

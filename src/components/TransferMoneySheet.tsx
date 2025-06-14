@@ -20,6 +20,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import Slider from '@react-native-community/slider';
 import ErrorDisplay from './ErrorDisplay';
 import { useBalance } from '../hooks/useBalanceHook';
+import { formatCurrency } from '../utils/formatCurrency';
 
 interface TransferData {
   recipientName: string;
@@ -51,7 +52,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
     const [errors, setErrors] = useState<z.ZodError['formErrors']['fieldErrors'] | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
      const [liveAmount, setLiveAmount] = useState('');
-     const {balance,deductFromBalance} = useBalance();
+    const { balance, addTransaction } = useBalance();
      
      const renderBackdrop = useCallback(
       (props: any) => (
@@ -112,7 +113,7 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
         setLiveAmount('')
         setErrors(null);
 
-        deductFromBalance(transferAmount);
+        addTransaction({amount:transferData.amount,title: `To: ${recipientName}`,type:'send'});
         Alert.alert('Success', 'Money transferred successfully!');
         
         // 3. Dismiss the modal on success
@@ -125,9 +126,6 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
       }
     };
 
-    const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(value);
-    };
    return (
       <BottomSheetModal
         ref={ref}

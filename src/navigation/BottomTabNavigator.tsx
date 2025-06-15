@@ -4,7 +4,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import HomeScreen from '../screens/HomeScreen';
 import AccountScreen from '../screens/AccountScreen';
 import TransferMoneySheet from '../components/TransferMoneySheet';
@@ -31,7 +30,7 @@ const BottomTabNavigator = () => {
         }}
       >
         <Tab.Screen
-          name="My wallet"
+          name="My Wallet"
           component={HomeScreen}
           options={{
             tabBarIcon: ({
@@ -50,7 +49,6 @@ const BottomTabNavigator = () => {
               />
             ),
           }}
-          insets={insets}
         />
         <Tab.Screen
           name="Add"

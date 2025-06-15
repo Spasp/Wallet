@@ -22,28 +22,12 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
-import { isValidPhoneNumber } from 'libphonenumber-js';
 import Slider from '@react-native-community/slider';
 import ErrorDisplay from './ErrorDisplay';
 import { useBalance } from '../hooks/useBalanceHook';
 import { formatCurrency } from '../utils/formatCurrency';
-
-interface TransferData {
-  recipientName: string;
-  recipientAccount: string;
-  amount: number;
-  description: string;
-}
-
-// Define the validation schema using Zod
-const transferSchema = z.object({
-  recipientName: z.string().min(8, 'Recipient full name is required'),
-  recipientAccount: z
-    .string()
-    .refine(isValidPhoneNumber, { message: 'Please add a valid phone ' }),
-  amount: z.number().positive('Amount must be greater than 0'),
-  description: z.string().optional(),
-});
+import { TransferPayload, transferSchema } from '../schemas/validation';
+import { transferFunds } from '../service/TransferFunds';
 
 interface TransferMoneySheetProps {
   insets: EdgeInsets;
@@ -100,21 +84,14 @@ const TransferMoneySheet = forwardRef<
     const transferAmount = parseFloat(amount);
 
     try {
-      const transferData: TransferData = {
+      const transferData: TransferPayload = {
         recipientName,
         recipientAccount,
         amount: transferAmount,
         description,
       };
-      const shouldReject = transferData.amount === 1 ? true : false;
 
-      await new Promise((resolve, reject) =>
-        setTimeout(() => {
-          if (shouldReject) reject(new Error('Network issue'));
-          else resolve('Success');
-        }, 2000),
-      );
-
+      await transferFunds(transferData);
       addTransaction({
         amount: transferAmount,
         title: `To: ${recipientName}`,
@@ -125,8 +102,12 @@ const TransferMoneySheet = forwardRef<
       if (ref && typeof ref !== 'function' && ref.current) {
         ref.current.dismiss();
       }
-    } catch (error) {
-      Alert.alert('Error', 'Transfer failed. Please try again.');
+    } catch (error: any) {
+      if (error?.code && error.status) {
+        Alert.alert('Transfer Failed', error.message);
+        return;
+      }
+      Alert.alert('Transfer failed', 'Unknown error');
     } finally {
       setIsProcessing(false);
     }

@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { BottomTabNavigator } from './src/navigation';
 import { BalanceProvider } from './src/context/BalanceContext';
+import Toast from 'react-native-toast-message';
 
 function App(): React.JSX.Element {
   return (
@@ -20,6 +21,7 @@ function App(): React.JSX.Element {
           </BalanceProvider>
         </BottomSheetModalProvider>
       </SafeAreaProvider>
+      <Toast />
     </GestureHandlerRootView>
   );
 }

@@ -30,6 +30,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 import { TransferPayload, transferSchema } from '../schemas/validation';
 import { transferFunds } from '../service/TransferFunds';
 import ConfirmationDisplay from './ConfirmationDisplay';
+import Toast from 'react-native-toast-message';
 
 interface TransferMoneySheetProps {
   insets: EdgeInsets;
@@ -104,7 +105,12 @@ const TransferMoneySheet = forwardRef<
         ref.current.dismiss();
       }
       setTimeout(
-        () => Alert.alert('Success', 'Money transferred successfully!'),
+        () =>
+          Toast.show({
+            text1: 'Success',
+            text2: 'Money transferred successfully!',
+            type: 'success',
+          }),
         1200,
       );
     } catch (error: any) {

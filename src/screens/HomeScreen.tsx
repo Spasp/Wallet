@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Transaction } from '../context/BalanceContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useBalance } from '../hooks/useBalanceHook';
 import { formatCurrency } from '../utils/formatCurrency';
+import { useNetInfo } from '@react-native-community/netinfo';
+import Toast from 'react-native-toast-message';
 const TransactionItem = ({ item }: { item: Transaction }) => {
   const isReceive = item.type === 'receive';
   const color = isReceive ? '#28a745' : '#dc3545';
@@ -31,9 +33,41 @@ const TransactionItem = ({ item }: { item: Transaction }) => {
     </View>
   );
 };
+const showToast = (
+  type: string,
+  text1: string,
+  text2: string,
+  autoHide: boolean,
+) => {
+  Toast.show({
+    type,
+    text1,
+    text2,
+    autoHide,
+  });
+};
 
 const HomeScreen = () => {
   const { balance, transactions } = useBalance();
+  const netInfo = useNetInfo();
+  const prevIsConnected = useRef(netInfo.isConnected);
+  useEffect(() => {
+    const isConnected = netInfo.isConnected;
+
+    if (prevIsConnected.current !== isConnected) {
+      if (isConnected === false) {
+        showToast('error', 'Offline', 'You are currently offline', false);
+      } else if (isConnected === true) {
+        Toast.hide();
+        setTimeout(
+          () => showToast('success', 'Online', 'Back online!', true),
+          300,
+        );
+      }
+
+      prevIsConnected.current = isConnected;
+    }
+  }, [netInfo.isConnected]);
 
   return (
     <View style={[styles.container]}>

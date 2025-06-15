@@ -4,6 +4,7 @@ import { Text } from 'react-native-gesture-handler';
 import { formatCurrency } from '../utils/formatCurrency';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNetInfo } from '@react-native-community/netinfo';
 interface ConfirmationDisplayProps extends TransferPayload {
   isProcessing: boolean;
   onConfirm: () => void;
@@ -19,6 +20,8 @@ const ConfirmationDisplay: React.FC<ConfirmationDisplayProps> = ({
   isProcessing,
 }) => {
   const insets = useSafeAreaInsets();
+  const netInfo = useNetInfo();
+  const disabled = isProcessing || !netInfo?.isConnected;
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
@@ -61,10 +64,10 @@ const ConfirmationDisplay: React.FC<ConfirmationDisplayProps> = ({
           style={[
             styles.button,
             styles.confirmButton,
-            isProcessing && styles.transferButtonDisabled,
+            disabled && styles.transferButtonDisabled,
           ]}
           onPress={onConfirm}
-          disabled={isProcessing}
+          disabled={disabled}
         >
           <Text style={styles.transferButtonText}>
             {isProcessing ? 'Sending...' : 'Confirm'}

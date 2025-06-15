@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList,} from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Transaction } from '../context/BalanceContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useBalance } from '../hooks/useBalanceHook';
@@ -7,13 +7,18 @@ import { formatCurrency } from '../utils/formatCurrency';
 import { EdgeInsets } from 'react-native-safe-area-context';
 const TransactionItem = ({ item }: { item: Transaction }) => {
   const isReceive = item.type === 'receive';
-  const color = isReceive ? '#28a745' : '#dc3545'; 
-  const iconName = isReceive ?   'arrow-up-circle':'arrow-down-circle';
+  const color = isReceive ? '#28a745' : '#dc3545';
+  const iconName = isReceive ? 'arrow-up-circle' : 'arrow-down-circle';
   const sign = isReceive ? '+' : '-';
 
   return (
     <View style={styles.transactionItem}>
-      <Icon name={iconName} size={30} color={color} style={styles.transactionIcon} />
+      <Icon
+        name={iconName}
+        size={30}
+        color={color}
+        style={styles.transactionIcon}
+      />
       <View style={styles.transactionDetails}>
         <Text style={styles.transactionTitle}>{item.title}</Text>
         <Text style={styles.transactionDate}>
@@ -21,52 +26,51 @@ const TransactionItem = ({ item }: { item: Transaction }) => {
         </Text>
       </View>
       <Text style={[styles.transactionAmount, { color }]}>
-        {sign}{formatCurrency(item.amount)}
+        {sign}
+        {formatCurrency(item.amount)}
       </Text>
     </View>
   );
 };
 
-interface HomeScreenProps{
-  insets:EdgeInsets
+interface HomeScreenProps {
+  insets: EdgeInsets;
 }
-const HomeScreen = ({ insets = { top: 0, bottom: 0, left: 0, right: 0 } }: HomeScreenProps) => {
-  const { balance, transactions } = useBalance()
+const HomeScreen = ({
+  insets = { top: 0, bottom: 0, left: 0, right: 0 },
+}: HomeScreenProps) => {
+  const { balance, transactions } = useBalance();
 
   return (
-   
-      <View style={[styles.container]}>
-        {/* Balance Card */}
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Current Balance</Text>
-          <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
-        </View>
-
-        {/* Transactions List */}
-        <Text style={styles.listHeader}>Recent Activity</Text>
-        <FlatList
-          data={transactions}
-          renderItem={({ item }) => <TransactionItem item={item} />}
-          keyExtractor={(item) => item.id}
-          style={styles.list}
-          contentContainerStyle={styles.listContentContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No recent activity.</Text>
-            </View>
-          }
-        />
+    <View style={[styles.container]}>
+      {/* Balance Card */}
+      <View style={styles.balanceCard}>
+        <Text style={styles.balanceLabel}>Current Balance</Text>
+        <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
       </View>
-     
-    
+
+      {/* Transactions List */}
+      <Text style={styles.listHeader}>Recent Activity</Text>
+      <FlatList
+        data={transactions}
+        renderItem={({ item }) => <TransactionItem item={item} />}
+        keyExtractor={item => item.id}
+        style={styles.list}
+        contentContainerStyle={styles.listContentContainer}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No recent activity.</Text>
+          </View>
+        }
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
-      backgroundColor: '#f5f5f5',
+    backgroundColor: '#f5f5f5',
   },
   balanceCard: {
     backgroundColor: '#ffffff',
@@ -144,7 +148,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#888',
-  }
+  },
 });
 
 export default HomeScreen;

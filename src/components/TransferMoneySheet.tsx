@@ -1,4 +1,10 @@
-import React, { forwardRef, useMemo, useState, useCallback, useEffect } from 'react';
+import React, {
+  forwardRef,
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
 import {
   View,
   Text,
@@ -11,7 +17,7 @@ import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetScrollView,
-  BottomSheetTextInput
+  BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { EdgeInsets } from 'react-native-safe-area-context';
@@ -32,112 +38,141 @@ interface TransferData {
 // Define the validation schema using Zod
 const transferSchema = z.object({
   recipientName: z.string().min(8, 'Recipient full name is required'),
-  recipientAccount: z.string().refine(phone=>isValidPhoneNumber(phone),{message:"Please add a valid phone "}),
+  recipientAccount: z
+    .string()
+    .refine(isValidPhoneNumber, { message: 'Please add a valid phone ' }),
   amount: z.number().positive('Amount must be greater than 0'),
   description: z.string().optional(),
 });
 
 interface TransferMoneySheetProps {
- 
   insets: EdgeInsets;
- 
 }
 
-const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>(
-  ({  insets }, ref) => {
-    const [recipientName, setRecipientName] = useState('');
-    const [recipientAccount, setRecipientAccount] = useState('');
-    const [amount, setAmount] = useState('');
-    const [description, setDescription] = useState('');
-    const [errors, setErrors] = useState<z.ZodError['formErrors']['fieldErrors'] | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
-     const [liveAmount, setLiveAmount] = useState('');
-    const { balance, addTransaction } = useBalance();
-     
-     const renderBackdrop = useCallback(
-      (props: any) => (
-        <BottomSheetBackdrop
-          {...props}
-          disappearsOnIndex={-1} 
-          appearsOnIndex={0}  
-          opacity={0.7} 
-        />
-      ),
-      []
-    );
+const TransferMoneySheet = forwardRef<
+  BottomSheetModal,
+  TransferMoneySheetProps
+>(({ insets }, ref) => {
+  const { balance, addTransaction } = useBalance();
 
-   
-    const snapPoints = useMemo(() => ['90%'], []);
+  // State to manage which view is visible: 'form' or 'confirmation'
+  const [view, setView] = useState<'form' | 'confirmation'>('form');
 
-    // Validate form on input change
-    useEffect(() => {
-      const parsedAmount = parseFloat(amount);
-      const dataToValidate = {
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientAccount, setRecipientAccount] = useState('');
+  const [amount, setAmount] = useState(''); // The "official" amount for validation
+  const [liveAmount, setLiveAmount] = useState(''); // The live value for smooth UI
+  const [description, setDescription] = useState('');
+  const [errors, setErrors] = useState<
+    z.ZodError['formErrors']['fieldErrors'] | null
+  >(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const snapPoints = useMemo(() => ['95%'], []);
+
+  useEffect(() => {
+    const parsedAmount = parseFloat(amount);
+    const dataToValidate = {
+      recipientName,
+      recipientAccount,
+      amount: isNaN(parsedAmount) ? 0 : parsedAmount,
+    };
+    const result = transferSchema.safeParse(dataToValidate);
+    setErrors(result.success ? null : result.error.formErrors.fieldErrors);
+  }, [recipientName, recipientAccount, amount]);
+
+  const isButtonDisabled =
+    errors !== null ||
+    !amount ||
+    parseFloat(amount) <= 0 ||
+    parseFloat(amount) > balance;
+
+  // Transitions from the form to the confirmation view
+  const handleProceedToConfirm = () => {
+    if (isButtonDisabled) return;
+    Keyboard.dismiss();
+    setView('confirmation');
+  };
+
+  // Handles the final async transaction logic
+  const handleConfirmTransfer = async () => {
+    setIsProcessing(true);
+    const transferAmount = parseFloat(amount);
+
+    try {
+      const transferData: TransferData = {
         recipientName,
         recipientAccount,
-        amount: isNaN(parsedAmount) ? 0 : parsedAmount,
+        amount: transferAmount,
+        description,
       };
+      const shouldReject = transferData.amount === 1 ? true : false;
 
-      const result = transferSchema.safeParse(dataToValidate);
-      console.log(result)
-      setErrors(result.success ? null : result.error.formErrors.fieldErrors);
-    }, [recipientName, recipientAccount, amount]);
+      await new Promise((resolve, reject) =>
+        setTimeout(() => {
+          if (shouldReject) reject(new Error('Network issue'));
+          else resolve('Success');
+        }, 2000),
+      );
 
-   
- const isButtonDisabled = errors !== null || isProcessing || parseFloat(amount) > balance;
+      addTransaction({
+        amount: transferAmount,
+        title: `To: ${recipientName}`,
+        type: 'send',
+      });
+      Alert.alert('Success', 'Money transferred successfully!');
 
-
-    const handleTransfer = async () => {
-      // We can do a final check here just in case.
-      if (errors !== null || parseFloat(amount) > balance) {
-        Alert.alert('Error', 'Please fix the errors before submitting.');
-        return;
+      if (ref && typeof ref !== 'function' && ref.current) {
+        ref.current.dismiss();
       }
+    } catch (error) {
+      Alert.alert('Error', 'Transfer failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-      Keyboard.dismiss();
-      setIsProcessing(true);
-      const transferAmount = parseFloat(amount);
+  // Resets the view to the form when the modal is closed
+  const handleDismiss = () => {
+    setView('form');
+    // Clear the form for a fresh start next time
+    setRecipientName('');
+    setRecipientAccount('');
+    setAmount('');
+    setLiveAmount('');
+    setDescription('');
+    setErrors(null);
+  };
 
-      try {
-         const transferData: TransferData = { recipientName, recipientAccount, amount: transferAmount, description };
-         const shouldReject = transferData.amount === 1 ? true:false
-         //For testing purposes if the input is 1 then the call fails
-        await new Promise((resolve,reject) => setTimeout(()=>{
-        if (shouldReject) reject(new Error("Network issue"))
-          return resolve("Success")
-        },6000)) 
-        setRecipientName('');
-        setRecipientAccount('');
-        setAmount('');
-        setDescription('');
-        setLiveAmount('')
-        setErrors(null);
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.7}
+      />
+    ),
+    [],
+  );
 
-        addTransaction({amount:transferData.amount,title: `To: ${recipientName}`,type:'send'});
-        Alert.alert('Success', 'Money transferred successfully!');
-        
-        // 3. Dismiss the modal on success
-        (ref as any)?.current?.dismiss();
-      } catch (error) {
-        console.log(error)
-        Alert.alert('Error', 'Transfer failed. Please try again.');
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-   return (
-      <BottomSheetModal
-        ref={ref}
-        index={0}
-        snapPoints={snapPoints}
-        backdropComponent={renderBackdrop}
-        enablePanDownToClose
-        handleIndicatorStyle={styles.indicator}
-        backgroundStyle={styles.bottomSheetBackground}
-      >
-        <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
-          <View style={[styles.container, { paddingBottom: insets.bottom +10 }]}>
+  return (
+    <BottomSheetModal
+      ref={ref}
+      index={0}
+      snapPoints={snapPoints}
+      backdropComponent={renderBackdrop}
+      enablePanDownToClose
+      onDismiss={handleDismiss}
+      handleIndicatorStyle={styles.indicator}
+      backgroundStyle={styles.bottomSheetBackground}
+      topInset={insets.top}
+    >
+      <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
+        {view === 'form' ? (
+          <View
+            style={[styles.container, { paddingBottom: insets.bottom + 10 }]}
+          >
             <View style={styles.header}>
               <Icon name="paper-plane" size={24} color="#007AFF" />
               <Text style={styles.title}>Transfer Money</Text>
@@ -145,94 +180,207 @@ const TransferMoneySheet = forwardRef<BottomSheetModal, TransferMoneySheetProps>
 
             <View style={styles.balanceContainer}>
               <Text style={styles.balanceLabel}>Available Balance</Text>
-              <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
+              <Text style={styles.balanceAmount}>
+                {formatCurrency(balance)}
+              </Text>
             </View>
 
             <View style={styles.form}>
-              {/* Recipient Name */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Recipient Name *</Text>
-                <BottomSheetTextInput editable={!isProcessing} style={[styles.input, errors?.recipientName && styles.inputError]} value={recipientName} onChangeText={setRecipientName} placeholder="Enter recipient's full name" placeholderTextColor={styles.placeHolderColor.color} />
+                <BottomSheetTextInput
+                  editable={!isProcessing}
+                  style={[
+                    styles.input,
+                    errors?.recipientName && styles.inputError,
+                  ]}
+                  value={recipientName}
+                  onChangeText={setRecipientName}
+                  onBlur={() => setAmount(liveAmount)}
+                  placeholder="Enter recipient's full name"
+                  placeholderTextColor="#999999"
+                />
                 <ErrorDisplay message={errors?.recipientName?.[0]} />
               </View>
 
-              {/* Recipient Account */}
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Phone Number</Text>
-                <BottomSheetTextInput editable={!isProcessing} style={[styles.input, errors?.recipientAccount && styles.inputError]} value={recipientAccount} keyboardType="phone-pad" onChangeText={setRecipientAccount} placeholder="Enter phone number (+30...)" placeholderTextColor={styles.placeHolderColor.color} />
+                <Text style={styles.label}>Phone Number *</Text>
+                <BottomSheetTextInput
+                  editable={!isProcessing}
+                  style={[
+                    styles.input,
+                    errors?.recipientAccount && styles.inputError,
+                  ]}
+                  value={recipientAccount}
+                  keyboardType="phone-pad"
+                  onChangeText={setRecipientAccount}
+                  onBlur={() => setAmount(liveAmount)}
+                  placeholder="Enter phone number (+1...)"
+                  placeholderTextColor="#999999"
+                />
                 <ErrorDisplay message={errors?.recipientAccount?.[0]} />
               </View>
 
-              {/* Amount */}
               <View>
                 <Text style={styles.label}>Amount *</Text>
-                <View style={[styles.amountInputContainer, (errors?.amount || (amount && parseFloat(amount) > balance)) && styles.inputError]}>
+                <View
+                  style={[
+                    styles.amountInputContainer,
+                    (errors?.amount ||
+                      (liveAmount && parseFloat(liveAmount) > balance)) &&
+                      styles.inputError,
+                  ]}
+                >
                   <Text style={styles.currencySymbol}>€</Text>
                   <BottomSheetTextInput
-                  editable={!isProcessing}
+                    editable={!isProcessing}
                     style={styles.amountInput}
                     value={liveAmount}
-                    onChangeText={(text) => {
-                      setLiveAmount(text); 
-                      setAmount(text)
+                    onChangeText={amount => {
+                      setLiveAmount(amount);
+                      setAmount(amount);
                     }}
-                 
+                    onBlur={() => setAmount(liveAmount)}
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     placeholderTextColor="#999999"
                   />
                 </View>
-              
-                <ErrorDisplay message={errors?.amount?.[0] || (amount && parseFloat(amount) > balance ? 'Amount exceeds available balance' : undefined)} />
+                <ErrorDisplay
+                  message={
+                    errors?.amount?.[0] ||
+                    (liveAmount && parseFloat(liveAmount) > balance
+                      ? 'Amount exceeds available balance'
+                      : undefined)
+                  }
+                />
               </View>
-              
-              {/* Slider */}
+
               <View style={styles.sliderWrapper}>
                 <Slider
-                  minimumTrackTintColor={"#007AFF"}
-                  maximumTrackTintColor='grey'
-                  thumbTintColor={"#007AFF"}
-                 onResponderGrant={()=>true}
+                  minimumTrackTintColor={'#007AFF'}
+                  maximumTrackTintColor="grey"
+                  thumbTintColor={'#007AFF'}
+                  onResponderGrant={() => true}
+                  disabled={isProcessing}
                   value={parseFloat(liveAmount) || 0}
                   style={styles.slider}
                   minimumValue={0}
                   maximumValue={Math.floor(balance)}
                   step={1}
-                  disabled={isProcessing}
-                  
-                   onValueChange={(value) => setLiveAmount(Math.round(value).toString())}
-               
-                 onSlidingComplete={(value) => setAmount(Math.round(value).toString())}
+                  onValueChange={value =>
+                    setLiveAmount(Math.round(value).toString())
+                  }
+                  onSlidingComplete={value =>
+                    setAmount(Math.round(value).toString())
+                  }
                 />
                 <View style={styles.sliderMaxMinWrapper}>
-                  <Text style={styles.balanceLabel} >0 €</Text>
-                  <Text style={styles.balanceLabel} >{balance} €</Text>
+                  <Text style={styles.balanceLabel}>0 €</Text>
+                  <Text style={styles.balanceLabel}>
+                    {Math.floor(balance)} €
+                  </Text>
                 </View>
               </View>
 
-              {/* Description */}
-              <View style={[styles.inputContainer,{marginBottom:5,}]}>
+              <View style={[styles.inputContainer, { marginBottom: 5 }]}>
                 <Text style={styles.label}>Description (Optional)</Text>
-                <BottomSheetTextInput editable={!isProcessing} numberOfLines={2} maxLength={50} style={[styles.input, styles.descriptionInput]} value={description} onChangeText={setDescription} placeholder="Add a note for this transfer" multiline placeholderTextColor={styles.placeHolderColor.color} />
-              
+                <BottomSheetTextInput
+                  editable={!isProcessing}
+                  numberOfLines={2}
+                  maxLength={50}
+                  style={[styles.input, styles.descriptionInput]}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Add a note for this transfer"
+                  multiline
+                  placeholderTextColor="#999999"
+                />
               </View>
             </View>
 
-            {/* Transfer Button */}
-            <TouchableOpacity style={[styles.transferButton, isButtonDisabled && styles.transferButtonDisabled]} onPress={handleTransfer} disabled={isButtonDisabled}>
-              <Text style={styles.transferButtonText}>{isProcessing ? 'Processing...' : 'Transfer Money'}</Text>
+            <TouchableOpacity
+              style={[
+                styles.transferButton,
+                isButtonDisabled && styles.transferButtonDisabled,
+              ]}
+              onPress={handleProceedToConfirm}
+              disabled={isButtonDisabled}
+            >
+              <Text style={styles.transferButtonText}>Review Transfer</Text>
             </TouchableOpacity>
           </View>
-        </BottomSheetScrollView>
-      </BottomSheetModal>
-    )
-  }
-);
+        ) : (
+          //
+          <View
+            style={[
+              styles.container,
+              {
+                paddingBottom: insets.bottom + 10,
+              },
+            ]}
+          >
+            <View style={styles.header}>
+              <Icon name="checkmark-circle-outline" size={28} color="#007AFF" />
+              <Text style={styles.title}>Confirm Your Transfer</Text>
+            </View>
+
+            <View style={styles.confirmationDetails}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Sending to</Text>
+                <Text style={styles.detailValue} numberOfLines={1}>
+                  {recipientName}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Phone Number</Text>
+                <Text style={styles.detailValue}>{recipientAccount}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Description</Text>
+                <Text style={styles.detailValue} numberOfLines={2}>
+                  {description || 'Not provided'}
+                </Text>
+              </View>
+              <View style={styles.amountRow}>
+                <Text style={styles.detailLabel}>Amount</Text>
+                <Text style={styles.confirmAmount}>
+                  {formatCurrency(parseFloat(amount))}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.confirmationButtons}>
+              <TouchableOpacity
+                style={[styles.button, styles.backButton]}
+                onPress={() => setView('form')}
+                disabled={isProcessing}
+              >
+                <Text style={styles.backButtonText}>Go Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.confirmButton,
+                  isProcessing && styles.transferButtonDisabled,
+                ]}
+                onPress={handleConfirmTransfer}
+                disabled={isProcessing}
+              >
+                <Text style={styles.transferButtonText}>
+                  {isProcessing ? 'Sending...' : 'Confirm'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </BottomSheetScrollView>
+    </BottomSheetModal>
+  );
+});
 
 const styles = StyleSheet.create({
-  contentContainer: {
-    flexGrow: 1,
-  },
+  contentContainer: { flexGrow: 1 },
   container: {
     flex: 1,
     paddingHorizontal: 20,
@@ -242,23 +390,14 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
-  indicator: {
-    backgroundColor: '#E0E0E0',
-    width: 40,
-    height: 4,
-  },
+  indicator: { backgroundColor: '#E0E0E0', width: 40, height: 4 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 20,
     paddingTop: 10,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginLeft: 10,
-    color: '#000',
-  },
+  title: { fontSize: 20, fontWeight: '600', marginLeft: 10, color: '#000' },
   balanceContainer: {
     backgroundColor: '#F8F9FA',
     padding: 10,
@@ -266,26 +405,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: 'center',
   },
-  balanceLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  balanceAmount: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  form: {
-    flex: 1,
-  },
-  inputContainer: {
-    marginBottom: 0,
-  },
+  balanceLabel: { fontSize: 14, color: '#666' },
+  balanceAmount: { fontSize: 24, fontWeight: '700', color: '#007AFF' },
+  form: { flex: 1 },
+  inputContainer: {},
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
     marginBottom: 8,
+    marginTop: 10,
   },
   input: {
     borderWidth: 1,
@@ -295,13 +424,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#FAFAFA',
     color: '#000',
-    flexWrap:"wrap",
-    flex:1,
-   
   },
-  inputError: {
-    borderColor: '#FF3B30',
-  },
+  inputError: { borderColor: '#FF3B30' },
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -324,15 +448,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
-  descriptionInput: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginTop: 4,
-  },
+  descriptionInput: { height: 80, textAlignVertical: 'top' },
+  errorText: { color: '#FF3B30', fontSize: 12, marginTop: 4, minHeight: 16 },
   transferButton: {
     backgroundColor: '#007AFF',
     padding: 16,
@@ -340,25 +457,77 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 'auto',
   },
-  transferButtonDisabled: {
-    backgroundColor: '#B0B0B0',
+  transferButtonDisabled: { backgroundColor: '#B0B0B0' },
+  transferButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  sliderWrapper: { marginTop: 20, marginBottom: 10 },
+  slider: { height: 40 },
+  sliderMaxMinWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  transferButtonText: {
-    color: '#FFFFFF',
+  // Confirmation View Styles
+  confirmationDetails: {
+    flex: 1,
+    backgroundColor: '#EEEEEE',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9E9E9',
+    alignItems: 'center',
+  },
+  amountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 14,
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  detailValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    flexShrink: 1, // Allow text to shrink if needed
+    textAlign: 'right',
+    paddingLeft: 10,
+  },
+  confirmAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  confirmationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 20,
+    gap: 10,
+  },
+  button: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  backButton: {
+    backgroundColor: '#EFEFEF',
+  },
+  backButtonText: {
+    color: '#000',
     fontSize: 16,
     fontWeight: '600',
   },
-  placeHolderColor:{
-    color:"#999999"
+  confirmButton: {
+    backgroundColor: '#007AFF',
   },
-  sliderWrapper:{
-
-  
-  },
-  slider:{
-    height:40,
-  },
-  sliderMaxMinWrapper:{flex:1,flexDirection:"row",justifyContent:"space-between"}
 });
 
 export default TransferMoneySheet;

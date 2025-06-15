@@ -7,7 +7,6 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { BottomTabNavigator } from './src/navigation';
 import { BalanceProvider } from './src/context/BalanceContext';
 
-
 function App(): React.JSX.Element {
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -15,9 +14,9 @@ function App(): React.JSX.Element {
         {/* Wrap your NavigationContainer with the Modal Provider */}
         <BottomSheetModalProvider>
           <BalanceProvider>
-          <NavigationContainer>
-            <BottomTabNavigator />
-          </NavigationContainer>
+            <NavigationContainer>
+              <BottomTabNavigator />
+            </NavigationContainer>
           </BalanceProvider>
         </BottomSheetModalProvider>
       </SafeAreaProvider>

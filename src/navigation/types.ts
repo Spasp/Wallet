@@ -1,6 +1,6 @@
 // src/navigation/types.ts
 
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
 export type RootStackParamList = {
@@ -10,7 +10,7 @@ export type RootStackParamList = {
 export type BottomTabParamList = {
   Home: undefined;
   Add: undefined;
-  Account:undefined;
+  Account: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
@@ -18,6 +18,3 @@ export type RootStackScreenProps<T extends keyof RootStackParamList> =
 
 export type AppBottomTabScreenProps<T extends keyof BottomTabParamList> =
   BottomTabScreenProps<BottomTabParamList, T>;
-
-    
-

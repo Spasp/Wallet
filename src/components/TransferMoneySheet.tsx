@@ -192,6 +192,11 @@ const TransferMoneySheet = forwardRef<
                   onBlur={() => setAmount(liveAmount)}
                   placeholder="Enter recipient's full name"
                   placeholderTextColor="#999999"
+                  autoFocus
+                  autoCapitalize="words"
+                  importantForAutofill="yes"
+                  returnKeyType="next"
+                  submitBehavior="blurAndSubmit"
                 />
                 <ErrorDisplay message={errors?.recipientName?.[0]} />
               </View>
@@ -205,11 +210,15 @@ const TransferMoneySheet = forwardRef<
                     errors?.recipientAccount && styles.inputError,
                   ]}
                   value={recipientAccount}
+                  inputMode="tel"
                   keyboardType="phone-pad"
                   onChangeText={setRecipientAccount}
                   onBlur={() => setAmount(liveAmount)}
                   placeholder="Enter phone number (+30...)"
                   placeholderTextColor="#999999"
+                  importantForAutofill="yes"
+                  returnKeyType="next"
+                  submitBehavior="blurAndSubmit"
                 />
                 <ErrorDisplay message={errors?.recipientAccount?.[0]} />
               </View>
@@ -237,6 +246,8 @@ const TransferMoneySheet = forwardRef<
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     placeholderTextColor="#999999"
+                    returnKeyType="next"
+                    submitBehavior="blurAndSubmit"
                   />
                 </View>
                 <ErrorDisplay

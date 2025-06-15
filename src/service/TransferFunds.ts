@@ -3,8 +3,6 @@ import { TransferPayload } from '../schemas/validation';
 export const transferFunds = async ({
   recipientAccount,
   recipientName,
-  amount,
-  description,
 }: TransferPayload): Promise<{ success: boolean }> => {
   //mocking up errors for the api request
   await new Promise(resolve => setTimeout(resolve, 3000));

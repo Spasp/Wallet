@@ -1,4 +1,4 @@
-import { Children, createContext, useCallback, useMemo, useState } from 'react';
+import { createContext, useCallback, useMemo, useState } from 'react';
 
 export interface BalanceContextType {
   balance: number;

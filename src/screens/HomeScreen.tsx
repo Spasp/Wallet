@@ -4,7 +4,6 @@ import { Transaction } from '../context/BalanceContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useBalance } from '../hooks/useBalanceHook';
 import { formatCurrency } from '../utils/formatCurrency';
-import { EdgeInsets } from 'react-native-safe-area-context';
 const TransactionItem = ({ item }: { item: Transaction }) => {
   const isReceive = item.type === 'receive';
   const color = isReceive ? '#28a745' : '#dc3545';

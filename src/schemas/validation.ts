@@ -1,11 +1,5 @@
 import { z } from 'zod';
 import { isValidPhoneNumber } from 'libphonenumber-js';
-interface TransferData {
-  recipientName: string;
-  recipientAccount: string;
-  amount: number;
-  description: string;
-}
 
 // Define the validation schema using Zod
 export const transferSchema = z.object({

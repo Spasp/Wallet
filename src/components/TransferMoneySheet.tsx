@@ -18,6 +18,7 @@ import {
   BottomSheetBackdrop,
   BottomSheetScrollView,
   BottomSheetTextInput,
+  useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { EdgeInsets } from 'react-native-safe-area-context';
@@ -28,6 +29,7 @@ import { useBalance } from '../hooks/useBalanceHook';
 import { formatCurrency } from '../utils/formatCurrency';
 import { TransferPayload, transferSchema } from '../schemas/validation';
 import { transferFunds } from '../service/TransferFunds';
+import ConfirmationDisplay from './ConfirmationDisplay';
 
 interface TransferMoneySheetProps {
   insets: EdgeInsets;
@@ -38,10 +40,10 @@ const TransferMoneySheet = forwardRef<
   TransferMoneySheetProps
 >(({ insets }, ref) => {
   const { balance, addTransaction } = useBalance();
-
-  // State to manage which view is visible: 'form' or 'confirmation'
+  const animationConfigs = useBottomSheetTimingConfigs({
+    duration: 500, // Duration in milliseconds
+  });
   const [view, setView] = useState<'form' | 'confirmation'>('form');
-
   const [recipientName, setRecipientName] = useState('');
   const [recipientAccount, setRecipientAccount] = useState('');
   const [amount, setAmount] = useState(''); // The "official" amount for validation
@@ -97,11 +99,14 @@ const TransferMoneySheet = forwardRef<
         title: `To: ${recipientName}`,
         type: 'send',
       });
-      Alert.alert('Success', 'Money transferred successfully!');
 
       if (ref && typeof ref !== 'function' && ref.current) {
         ref.current.dismiss();
       }
+      setTimeout(
+        () => Alert.alert('Success', 'Money transferred successfully!'),
+        1200,
+      );
     } catch (error: any) {
       if (error?.code && error.status) {
         Alert.alert('Transfer Failed', error.message);
@@ -148,6 +153,7 @@ const TransferMoneySheet = forwardRef<
       handleIndicatorStyle={styles.indicator}
       backgroundStyle={styles.bottomSheetBackground}
       topInset={insets.top}
+      animationConfigs={animationConfigs}
     >
       <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
         {view === 'form' ? (
@@ -196,7 +202,7 @@ const TransferMoneySheet = forwardRef<
                   keyboardType="phone-pad"
                   onChangeText={setRecipientAccount}
                   onBlur={() => setAmount(liveAmount)}
-                  placeholder="Enter phone number (+1...)"
+                  placeholder="Enter phone number (+30...)"
                   placeholderTextColor="#999999"
                 />
                 <ErrorDisplay message={errors?.recipientAccount?.[0]} />
@@ -217,9 +223,9 @@ const TransferMoneySheet = forwardRef<
                     editable={!isProcessing}
                     style={styles.amountInput}
                     value={liveAmount}
-                    onChangeText={amount => {
-                      setLiveAmount(amount);
-                      setAmount(amount);
+                    onChangeText={newAmount => {
+                      setLiveAmount(newAmount);
+                      setAmount(newAmount);
                     }}
                     onBlur={() => setAmount(liveAmount)}
                     placeholder="0.00"
@@ -292,68 +298,14 @@ const TransferMoneySheet = forwardRef<
             </TouchableOpacity>
           </View>
         ) : (
-          //
-          <View
-            style={[
-              styles.container,
-              {
-                paddingBottom: insets.bottom + 10,
-              },
-            ]}
-          >
-            <View style={styles.header}>
-              <Icon name="checkmark-circle-outline" size={28} color="#007AFF" />
-              <Text style={styles.title}>Confirm Your Transfer</Text>
-            </View>
-
-            <View style={styles.confirmationDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Sending to</Text>
-                <Text style={styles.detailValue} numberOfLines={1}>
-                  {recipientName}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phone Number</Text>
-                <Text style={styles.detailValue}>{recipientAccount}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Description</Text>
-                <Text style={styles.detailValue} numberOfLines={2}>
-                  {description || 'Not provided'}
-                </Text>
-              </View>
-              <View style={styles.amountRow}>
-                <Text style={styles.detailLabel}>Amount</Text>
-                <Text style={styles.confirmAmount}>
-                  {formatCurrency(parseFloat(amount))}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.confirmationButtons}>
-              <TouchableOpacity
-                style={[styles.button, styles.backButton]}
-                onPress={() => setView('form')}
-                disabled={isProcessing}
-              >
-                <Text style={styles.backButtonText}>Go Back</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.confirmButton,
-                  isProcessing && styles.transferButtonDisabled,
-                ]}
-                onPress={handleConfirmTransfer}
-                disabled={isProcessing}
-              >
-                <Text style={styles.transferButtonText}>
-                  {isProcessing ? 'Sending...' : 'Confirm'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <ConfirmationDisplay
+            amount={parseFloat(amount)}
+            recipientAccount={recipientAccount}
+            recipientName={recipientName}
+            isProcessing={isProcessing}
+            onConfirm={handleConfirmTransfer}
+            onGoBack={() => setView('form')}
+          />
         )}
       </BottomSheetScrollView>
     </BottomSheetModal>

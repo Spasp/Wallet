@@ -320,6 +320,7 @@ const TransferMoneySheet = forwardRef<
             recipientAccount={recipientAccount}
             recipientName={recipientName}
             isProcessing={isProcessing}
+            description={description}
             onConfirm={handleConfirmTransfer}
             onGoBack={() => setView('form')}
           />

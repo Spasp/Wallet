@@ -54,8 +54,23 @@ const TransferMoneySheet = forwardRef<
     z.ZodError['formErrors']['fieldErrors'] | null
   >(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
+  const [countryCode, setCountryCode] = useState('30');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const snapPoints = useMemo(() => ['95%'], []);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const parsedAmount = parseFloat(amount);
@@ -134,8 +149,13 @@ const TransferMoneySheet = forwardRef<
     setLiveAmount('');
     setDescription('');
     setErrors(null);
+    setPhoneNumber('');
+    setCountryCode('30');
   };
-
+  const handleRecipientAccount = (code: string, number: string) => {
+    const synthesizedRecipientAccount = `+${code}${number}`;
+    setRecipientAccount(synthesizedRecipientAccount);
+  };
   const renderBackdrop = useCallback(
     (props: any) => (
       <BottomSheetBackdrop
@@ -154,14 +174,17 @@ const TransferMoneySheet = forwardRef<
       index={0}
       snapPoints={snapPoints}
       backdropComponent={renderBackdrop}
-      enablePanDownToClose
       onDismiss={handleDismiss}
       handleIndicatorStyle={styles.indicator}
       backgroundStyle={styles.bottomSheetBackground}
       topInset={insets.top}
       animationConfigs={animationConfigs}
     >
-      <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
+      <BottomSheetScrollView
+        contentContainerStyle={styles.contentContainer}
+        scrollEnabled
+      >
+        {/* I should extract this to standalone component as well */}
         {view === 'form' ? (
           <View
             style={[styles.container, { paddingBottom: insets.bottom + 10 }]}
@@ -179,7 +202,7 @@ const TransferMoneySheet = forwardRef<
             </View>
 
             <View style={styles.form}>
-              <View style={styles.inputContainer}>
+              <View>
                 <Text style={styles.label}>Recipient Name *</Text>
                 <BottomSheetTextInput
                   editable={!isProcessing}
@@ -189,10 +212,8 @@ const TransferMoneySheet = forwardRef<
                   ]}
                   value={recipientName}
                   onChangeText={setRecipientName}
-                  onBlur={() => setAmount(liveAmount)}
                   placeholder="Enter recipient's full name"
                   placeholderTextColor="#999999"
-                  autoFocus
                   autoCapitalize="words"
                   importantForAutofill="yes"
                   returnKeyType="next"
@@ -201,25 +222,56 @@ const TransferMoneySheet = forwardRef<
                 <ErrorDisplay message={errors?.recipientName?.[0]} />
               </View>
 
-              <View style={styles.inputContainer}>
+              <View>
                 <Text style={styles.label}>Phone Number *</Text>
-                <BottomSheetTextInput
-                  editable={!isProcessing}
-                  style={[
-                    styles.input,
-                    errors?.recipientAccount && styles.inputError,
-                  ]}
-                  value={recipientAccount}
-                  inputMode="tel"
-                  keyboardType="phone-pad"
-                  onChangeText={setRecipientAccount}
-                  onBlur={() => setAmount(liveAmount)}
-                  placeholder="Enter phone number (+30...)"
-                  placeholderTextColor="#999999"
-                  importantForAutofill="yes"
-                  returnKeyType="next"
-                  submitBehavior="blurAndSubmit"
-                />
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flex: 1,
+                    alignItems: 'center',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.currencySymbol}>+</Text>
+                    <BottomSheetTextInput
+                      style={[
+                        styles.input,
+                        errors?.recipientAccount && styles.inputError,
+                        { marginRight: 10, minWidth: 40 },
+                      ]}
+                      value={countryCode}
+                      onChangeText={newCD => {
+                        const cd = newCD.replace(/[^0-9]/g, '');
+                        setCountryCode(cd);
+                        handleRecipientAccount(cd, phoneNumber);
+                      }}
+                      maxLength={2}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                  <BottomSheetTextInput
+                    editable={!isProcessing}
+                    style={[
+                      styles.input,
+                      errors?.recipientAccount && styles.inputError,
+                      { flex: 1 },
+                    ]}
+                    value={phoneNumber}
+                    inputMode="tel"
+                    keyboardType="phone-pad"
+                    onChangeText={number => {
+                      const strippedNumber = number.replace(/[^0-9]/g, '');
+
+                      setPhoneNumber(strippedNumber);
+                      handleRecipientAccount(countryCode, strippedNumber);
+                    }}
+                    placeholder="Enter phone number"
+                    placeholderTextColor="#999999"
+                    importantForAutofill="yes"
+                    returnKeyType="next"
+                    submitBehavior="blurAndSubmit"
+                  />
+                </View>
                 <ErrorDisplay message={errors?.recipientAccount?.[0]} />
               </View>
 
@@ -260,34 +312,36 @@ const TransferMoneySheet = forwardRef<
                 />
               </View>
 
-              <View style={styles.sliderWrapper}>
-                <Slider
-                  minimumTrackTintColor={'#007AFF'}
-                  maximumTrackTintColor="grey"
-                  thumbTintColor={'#007AFF'}
-                  onResponderGrant={() => true}
-                  disabled={isProcessing}
-                  value={parseFloat(liveAmount) || 0}
-                  style={styles.slider}
-                  minimumValue={0}
-                  maximumValue={Math.floor(balance)}
-                  step={1}
-                  onValueChange={value =>
-                    setLiveAmount(Math.round(value).toString())
-                  }
-                  onSlidingComplete={value =>
-                    setAmount(Math.round(value).toString())
-                  }
-                />
-                <View style={styles.sliderMaxMinWrapper}>
-                  <Text style={styles.balanceLabel}>0 €</Text>
-                  <Text style={styles.balanceLabel}>
-                    {Math.floor(balance)} €
-                  </Text>
+              {!keyboardVisible && ( //hiding slider when keyboard visible to prevent ui glitches
+                <View style={styles.sliderWrapper}>
+                  <Slider
+                    minimumTrackTintColor={'#007AFF'}
+                    maximumTrackTintColor="grey"
+                    thumbTintColor={'#007AFF'}
+                    onResponderGrant={() => true}
+                    disabled={isProcessing}
+                    value={parseFloat(liveAmount) || 0}
+                    style={styles.slider}
+                    minimumValue={0}
+                    maximumValue={Math.floor(balance)}
+                    step={1}
+                    onValueChange={value =>
+                      setLiveAmount(Math.round(value).toString())
+                    }
+                    onSlidingComplete={value =>
+                      setAmount(Math.round(value).toString())
+                    }
+                  />
+                  <View style={styles.sliderMaxMinWrapper}>
+                    <Text style={styles.balanceLabel}>0 €</Text>
+                    <Text style={styles.balanceLabel}>
+                      {Math.floor(balance)} €
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              )}
 
-              <View style={[styles.inputContainer, { marginBottom: 5 }]}>
+              <View style={[{ marginBottom: 5 }]}>
                 <Text style={styles.label}>Description (Optional)</Text>
                 <BottomSheetTextInput
                   editable={!isProcessing}
@@ -359,7 +413,6 @@ const styles = StyleSheet.create({
   balanceLabel: { fontSize: 14, color: '#666' },
   balanceAmount: { fontSize: 24, fontWeight: '700', color: '#007AFF' },
   form: { flex: 1 },
-  inputContainer: {},
   label: {
     fontSize: 14,
     fontWeight: '600',
@@ -410,7 +463,7 @@ const styles = StyleSheet.create({
   },
   transferButtonDisabled: { backgroundColor: '#B0B0B0' },
   transferButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  sliderWrapper: { marginTop: 20, marginBottom: 10 },
+  sliderWrapper: { marginBottom: 5 },
   slider: { height: 40 },
   sliderMaxMinWrapper: {
     flexDirection: 'row',

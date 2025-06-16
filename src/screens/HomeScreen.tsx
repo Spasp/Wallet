@@ -74,24 +74,43 @@ const HomeScreen = () => {
     <View style={[styles.container]}>
       {/* Balance Card */}
       <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Current Balance</Text>
-        <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
+        <Text
+          accessible={true}
+          accessibilityLabel="Current balance"
+          style={styles.balanceLabel}
+        >
+          Current Balance
+        </Text>
+        <Text
+          accessible={true}
+          accessibilityLabel={`${formatCurrency(balance)}Euro`}
+          style={styles.balanceAmount}
+        >
+          {formatCurrency(balance)}
+        </Text>
       </View>
 
       {/* Transactions List */}
-      <Text style={styles.listHeader}>Recent Activity</Text>
-      <FlatList
-        data={transactions}
-        renderItem={({ item }) => <TransactionItem item={item} />}
-        keyExtractor={item => item.id}
-        style={styles.list}
-        contentContainerStyle={styles.listContentContainer}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No recent activity.</Text>
-          </View>
-        }
-      />
+      <View
+        accessible={true}
+        accessibilityShowsLargeContentViewer={true}
+        accessibilityLargeContentTitle="Transactions List"
+        style={{ flex: 1 }}
+      >
+        <Text style={styles.listHeader}>Recent Activity</Text>
+        <FlatList
+          data={transactions}
+          renderItem={({ item }) => <TransactionItem item={item} />}
+          keyExtractor={item => item.id}
+          style={styles.list}
+          contentContainerStyle={styles.listContentContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No recent activity.</Text>
+            </View>
+          }
+        />
+      </View>
     </View>
   );
 };

@@ -21,7 +21,7 @@ const BottomTabNavigator = () => {
   }, []);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View accessibilityLabel="Bottom navigator tab" style={{ flex: 1 }}>
       <Tab.Navigator
         screenOptions={{
           headerShown: true,
@@ -33,6 +33,7 @@ const BottomTabNavigator = () => {
           name="My Wallet"
           component={HomeScreen}
           options={{
+            tabBarAccessibilityLabel: 'My wallet Screen',
             tabBarIcon: ({
               color,
               size,
@@ -54,6 +55,8 @@ const BottomTabNavigator = () => {
           name="Add"
           component={EmptyComponent}
           options={{
+            tabBarAccessibilityLabel: 'Transfer Money',
+
             tabBarButton: (props: any) => (
               <Pressable
                 {...props}
@@ -71,6 +74,7 @@ const BottomTabNavigator = () => {
           name="Account"
           component={AccountScreen}
           options={{
+            tabBarAccessibilityLabel: 'My Account Screen',
             tabBarIcon: ({
               color,
               size,

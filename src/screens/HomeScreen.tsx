@@ -53,11 +53,12 @@ const HomeScreen = () => {
   const prevIsConnected = useRef(netInfo.isConnected);
   useEffect(() => {
     const isConnected = netInfo.isConnected;
-    if (prevIsConnected === null) return;
+    console.log({ isConnected });
+
     if (prevIsConnected.current !== isConnected) {
       if (isConnected === false) {
         showToast('error', 'Offline', 'You are currently offline', false);
-      } else if (isConnected === true) {
+      } else if (isConnected === true && prevIsConnected.current === false) {
         Toast.hide();
         setTimeout(
           () => showToast('success', 'Online', 'Back online!', true),

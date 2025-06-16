@@ -56,7 +56,7 @@ const TransferMoneySheet = forwardRef<
   const [isProcessing, setIsProcessing] = useState(false);
   const [countryCode, setCountryCode] = useState('30');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const snapPoints = useMemo(() => ['95%'], []);
+  const snapPoints = useMemo(() => ['100%'], []);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
@@ -187,7 +187,10 @@ const TransferMoneySheet = forwardRef<
         {/* I should extract this to standalone component as well */}
         {view === 'form' ? (
           <View
-            style={[styles.container, { paddingBottom: insets.bottom + 10 }]}
+            style={[
+              styles.container,
+              { paddingBottom: insets.bottom + 10, paddingTop: 10 },
+            ]}
           >
             <View style={styles.header}>
               <Icon name="paper-plane" size={24} color="#007AFF" />
@@ -224,14 +227,8 @@ const TransferMoneySheet = forwardRef<
 
               <View>
                 <Text style={styles.label}>Phone Number *</Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flex: 1,
-                    alignItems: 'center',
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.phoneNumberWrapper}>
+                  <View style={styles.phoneNumberRow}>
                     <Text style={styles.currencySymbol}>+</Text>
                     <BottomSheetTextInput
                       style={[
@@ -275,7 +272,7 @@ const TransferMoneySheet = forwardRef<
                 <ErrorDisplay message={errors?.recipientAccount?.[0]} />
               </View>
 
-              <View>
+              <View style={styles.amountSectionWrapper}>
                 <Text style={styles.label}>Amount *</Text>
                 <View
                   style={[
@@ -346,7 +343,7 @@ const TransferMoneySheet = forwardRef<
                 <BottomSheetTextInput
                   editable={!isProcessing}
                   numberOfLines={2}
-                  maxLength={50}
+                  maxLength={40}
                   style={[styles.input, styles.descriptionInput]}
                   value={description}
                   onChangeText={setDescription}
@@ -399,15 +396,15 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingTop: 10,
+    marginBottom: 10,
+    paddingTop: 0,
   },
   title: { fontSize: 20, fontWeight: '600', marginLeft: 10, color: '#000' },
   balanceContainer: {
     backgroundColor: '#F8F9FA',
     padding: 10,
     borderRadius: 12,
-    marginBottom: 10,
+    marginBottom: 0,
     alignItems: 'center',
   },
   balanceLabel: { fontSize: 14, color: '#666' },
@@ -418,7 +415,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 8,
-    marginTop: 10,
+    marginTop: 8,
   },
   input: {
     borderWidth: 1,
@@ -428,6 +425,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#FAFAFA',
     color: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 50,
   },
   inputError: { borderColor: '#FF3B30' },
   amountInputContainer: {
@@ -446,92 +446,47 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   amountInput: {
-    flex: 1,
     padding: 12,
     paddingLeft: 0,
     fontSize: 16,
     color: '#000',
+    width: '100%',
+    minHeight: 50,
   },
-  descriptionInput: { height: 80, textAlignVertical: 'top' },
+  descriptionInput: { height: 80, textAlignVertical: 'top', marginBottom: 5 },
   errorText: { color: '#FF3B30', fontSize: 12, marginTop: 4, minHeight: 16 },
   transferButton: {
     backgroundColor: '#007AFF',
-    padding: 16,
     borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 'auto',
+    minHeight: 50,
   },
-  transferButtonDisabled: { backgroundColor: '#B0B0B0' },
-  transferButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  sliderWrapper: { marginBottom: 5 },
-  slider: { height: 40 },
+  transferButtonDisabled: {
+    backgroundColor: '#B0B0B0',
+  },
+  transferButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  sliderWrapper: {},
+  slider: { height: 50 },
   sliderMaxMinWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  // Confirmation View Styles
-  confirmationDetails: {
+  amountSectionWrapper: {
+    minHeight: 80,
+    maxHeight: 130,
+  },
+  phoneNumberWrapper: {
+    flexDirection: 'row',
     flex: 1,
-    backgroundColor: '#EEEEEE',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9E9E9',
     alignItems: 'center',
   },
-  amountRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 14,
-    alignItems: 'center',
-  },
-  detailLabel: {
-    fontSize: 16,
-    color: '#666',
-  },
-  detailValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    flexShrink: 1, // Allow text to shrink if needed
-    textAlign: 'right',
-    paddingLeft: 10,
-  },
-  confirmAmount: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  confirmationButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 20,
-    gap: 10,
-  },
-  button: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  backButton: {
-    backgroundColor: '#EFEFEF',
-  },
-  backButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: '#007AFF',
-  },
+  phoneNumberRow: { flexDirection: 'row', alignItems: 'center' },
 });
 
 export default TransferMoneySheet;

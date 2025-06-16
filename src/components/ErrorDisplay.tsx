@@ -1,7 +1,6 @@
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text } from 'react-native';
 
 const ErrorDisplay = ({ message }: { message?: string }) => {
- 
   return (
     <Text style={[styles.errorText, { opacity: message ? 1 : 0 }]}>
       {message || ' '}
@@ -9,12 +8,10 @@ const ErrorDisplay = ({ message }: { message?: string }) => {
   );
 };
 const styles = StyleSheet.create({
-    errorText: {
+  errorText: {
     color: '#FF3B30',
     fontSize: 12,
-    marginTop: 4,
-    
-  
+    marginTop: 2,
   },
-})
-export default ErrorDisplay
+});
+export default ErrorDisplay;

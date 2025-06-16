@@ -4,7 +4,7 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
-> Create a virtual device through Android Studio or connect a real device with your computer which has developer options enable and USB debugging ON/
+> Create a virtual device through Android Studio or connect a real device with your computer which has developer options enabled and USB debugging ON
 
 ## Step 1: 
 -Download project to a local folder using git
